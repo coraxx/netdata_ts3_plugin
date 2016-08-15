@@ -78,6 +78,7 @@ class Service(SimpleService):
 		if self.user == "" or self.passwd == "":
 			if self.writeToLog: print(
 				"ts3.chart.py [FAIL] Please specify a TeamSpeak Server query user and password inside the ts3.chart.py!",
+				"Disable plugin...",
 				file=sys.stderr)
 			sys.exit(1)
 
@@ -87,7 +88,7 @@ class Service(SimpleService):
 			pids = [pid for pid in os.listdir('/proc') if pid.isdigit()]
 			for pid in pids:
 				try:
-					if 'ts3server_linux_x86' in open(os.path.join('/proc', pid, 'cmdline'), 'rb').read():
+					if 'ts3server' in open(os.path.join('/proc', pid, 'cmdline'), 'rb').read():
 						TS3_running = True
 						break
 				except IOError:
