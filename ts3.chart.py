@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-NetData plugin for active users on single teamspeak server.
+NetData plugin for active users on TeamSpeak 3 servers.
 Please set user and password for your TeamSpeakQuery login.
 
 Copyright (C) 2016  Jan Arnold
@@ -21,7 +21,7 @@ Copyright (C) 2016  Jan Arnold
 
 # @Title			: ts3.chart
 # @Project			:
-# @Description		: NetData plugin for active users on single teamspeak server
+# @Description		: NetData plugin for active users on TeamSpeak 3 servers
 # @Author			: Jan Arnold
 # @Email			: jan.arnold (at) coraxx.net
 # @Copyright		: Copyright (C) 2016  Jan Arnold
@@ -61,15 +61,19 @@ class Service(SimpleService):
 		## Timeout for Telnet commands in seconds
 		self.timeout = 1
 
-		## Server
+		########################## CUSTOMIZE ME ##########################
+		## TeamSpeak Server settings
 		self.host = "localhost"  # default
 		self.port = 10011  # default
 		self.sid = 1  # default. This script can only check one single virtual server atm
 
 		## TS3 Query user and password. If not set already, connect to your TS server
-		## with the TS client and go to the menu 'Extras'->'ServerQuery Login'
-		self.user = ""
-		self.passwd = ""
+		#  with the TS client and go to the menu 'Extras'->'ServerQuery Login'
+
+		self.user = ""  # <=== ADD LOGIN CREDENTIALS
+		self.passwd = ""  # <=== ADD LOGIN CREDENTIALS
+
+		#####################  END OF CUSTOMIZATION ######################
 
 		if self.user == "" or self.passwd == "":
 			if self.writeToLog: print(
@@ -132,7 +136,6 @@ class Service(SimpleService):
 		return True
 
 	def connectToServer(self):
-		## Connect to server
 		self.tn = telnetlib.Telnet(self.host, self.port, self.timeout)
 		index, _, msg = self.tn.expect(["information on a specific command"], self.timeout)
 		if index == -1:
@@ -145,7 +148,7 @@ class Service(SimpleService):
 		if ret is not None:
 			ret = self.getTnResponse("login {0} {1}".format(self.user, self.passwd))
 			if ret is None:
-				if self.writeToLog: print('ts3.chart.py [FAIL] Login unsuccesful', file=sys.stderr)
+				if self.writeToLog: print('ts3.chart.py [FAIL] Login unsuccessful', file=sys.stderr)
 				return 1
 			else:
 				return 0
