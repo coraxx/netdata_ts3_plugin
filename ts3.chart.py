@@ -103,7 +103,7 @@ class Service(SimpleService):
 					"ts3.chart.py [Info] TeamSpeak server process found. Connecting...",
 					file=sys.stderr)
 
-		self.users_connected = None
+		self.connected_users = None
 
 		## Connect to server
 		ret = self.connectToServer()
@@ -121,17 +121,17 @@ class Service(SimpleService):
 
 	def create(self):
 		self.chart(
-			'ts3.users_connected', '', 'User on TeamSpeak Server', 'users',
-			'users', 'TeamSpeak Server', 'line', priority, update_every)
+			'ts3.connected_users', '', 'User on TeamSpeak Server', 'users',
+			'connected_users', 'ts3.connected_users', 'line', priority, update_every)
 		self.dimension('online')
 		self.commit()
 		return True
 
 	def update(self, interval):
-		self.begin("ts3.users_connected", interval)
+		self.begin("ts3.connected_users", interval)
 		self.checkConnection()
-		users_connected = self.getTS3activeClients()
-		self.set("online", users_connected)
+		connected_users = self.getTS3activeClients()
+		self.set("online", connected_users)
 		self.end()
 		self.commit()
 		return True
@@ -163,11 +163,11 @@ class Service(SimpleService):
 		ret = self.getTnResponse("serverinfo")
 		if ret is not None:
 			reg = re.compile("virtualserver_clientsonline=(\d*)|virtualserver_queryclientsonline=(\d*)")
-			users_connected = reg.findall(ret)
+			connected_users = reg.findall(ret)
 			try:
 				## clients connected - query clients connected
-				users_connected = int(users_connected[0][0]) - int(users_connected[1][1])
-				return users_connected
+				connected_users = int(connected_users[0][0]) - int(connected_users[1][1])
+				return connected_users
 			except Exception as e:
 				if self.writeToLog: print(e, file=sys.stderr)
 				return -1
