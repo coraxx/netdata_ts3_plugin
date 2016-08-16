@@ -36,6 +36,8 @@ Copyright (C) 2016  Jan Arnold
 
 ### Version ###
 
+v0.2 - rewrote plugin to use Netdata's SocketService
+
 v0.1 - initial release
 
 
