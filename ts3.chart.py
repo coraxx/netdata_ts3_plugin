@@ -29,7 +29,7 @@ Copyright (C) 2016  Jan Arnold
 # @Credits			:
 # @Maintainer		: Jan Arnold
 # @Date				: 2016/08/15
-# @Version			: 0.2
+# @Version			: 0.3
 # @Status			: stable
 # @Usage			: automatically processed by netdata
 # @Notes			: With default NetData installation put this file under
