@@ -5,16 +5,14 @@
 
 ### Installation ###
 
-With default NetData installation copy the ts3.chart.py file to `/usr/libexec/netdata/python.d/`.
+With default NetData installation copy the ts3.chart.py script to `/usr/libexec/netdata/python.d/` and the ts3.conf config file to `/etc/netdata/python.d/`.
 
-Edit the file to set the TeamSpeak Server Query user and password.
+Edit the config file to set the TeamSpeak Server Query user and password.
 If not already set, connect to your TeamSpeak server with the TeamSpeak client and go to menu 'Extras' -> 'ServerQuery Login' and set a user and password.
 
 Then restart NetData to activate the plugin.
 
 To disable the ts3 plugin, edit `/etc/netdata/python.d.conf` and add `ts3: no`.
-
-Optionally add `ts3.conf` to `/etc/netdata/python.d/`
 
 
 ### License ###
@@ -35,6 +33,8 @@ Copyright (C) 2016  Jan Arnold
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ### Version ###
+
+v0.3 - cleanup and config implementation - thx for the help @paulfantom
 
 v0.2 - rewrote plugin to use Netdata's SocketService
 

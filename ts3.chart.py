@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 NetData plugin for active users on TeamSpeak 3 servers.
-Please set user and password for your TeamSpeakQuery login.
+Please set user and password for your TeamSpeakQuery login in the ts3.conf.
 
 Copyright (C) 2016  Jan Arnold
 
@@ -34,10 +34,10 @@ Copyright (C) 2016  Jan Arnold
 # @Usage			: automatically processed by netdata
 # @Notes			: With default NetData installation put this file under
 #					: /usr/libexec/netdata/python.d/
+#					: and the config file under /etc/netdata/python.d/
 # @Python_version	: 2.7.11
 """
 # ======================================================================================================================
-import sys
 import os
 import re
 from base import SocketService
@@ -51,7 +51,7 @@ ORDER = ['users']
 
 CHARTS = {
 	'users': {
-		'options': [None, 'Users online', 'users', 'TeamSpeak Server', 'ts3.connected_user', 'line'],
+		'options': [None, 'Users online', 'users', 'Online', 'ts3.connected_user', 'line'],
 		'lines': [
 			['connected_users', 'online', 'absolute']
 		]}
@@ -62,41 +62,46 @@ class Service(SocketService):
 	def __init__(self, configuration=None, name=None):
 		SocketService.__init__(self, configuration=configuration, name=name)
 
-		########################## CUSTOMIZE ME ##########################
 		## TeamSpeak Server settings
-		self.host = "localhost"  # default
-		self.port = 10011  # default
-		self.sid = 1  # default. This script can only check one single virtual server atm
-
-		## TS3 Query user and password. If not set already, connect to your TS server
-		#  with the TS client and go to the menu 'Extras'->'ServerQuery Login'
-
-		self.user = ""  # <=== ADD LOGIN CREDENTIALS
-		self.passwd = ""  # <=== ADD LOGIN CREDENTIALS
-
-		#####################  END OF CUSTOMIZATION ######################
+		# This script can only check one single virtual server atm
+		self.host = "localhost"
+		self.port = "10011"
 
 		## Socket settings
 		self.unix_socket = None
 		self._keep_alive = True
-		# self.request = "login {0} {1}\nuse sid={2}\nserverinfo\n".format(self.user, self.passwd, self.sid)
 		self.request = "serverinfo\n"
 
 		# Chart
 		self.order = ORDER
 		self.definitions = CHARTS
 
-		# Reconnect settings
-		self.maxReconnects = 5
-		self.retryCounter = 0
+	def check(self):
+		"""
+		Parse configuration and check if local Teamspeak server is running
+		:return: boolean
+		"""
+		self._parse_config()
 
-		self.connected_users = 0
-
-		if self.user == "" or self.passwd == "":
+		try:
+			self.user = self.configuration['user']
+			if self.user == '': raise KeyError
+		except KeyError:
 			self.error(
-				"Please specify a TeamSpeak Server query user and password inside the ts3.chart.py!",
-				"Disable plugin...")
-			sys.exit(1)
+				"Please specify a TeamSpeak Server query user inside the ts3.conf!", "Disabling plugin...")
+			return False
+		try:
+			self.passwd = self.configuration['pass']
+			if self.passwd == '': raise KeyError
+		except KeyError:
+			self.error(
+				"Please specify a TeamSpeak Server query password inside the ts3.conf!", "Disabling plugin...")
+			return False
+		try:
+			self.sid = self.configuration['sid']
+		except KeyError:
+			self.sid = 1
+			self.debug("No sid specified. Using: '{0}'".format(self.sid))
 
 		## Check once if TS3 is running when host is localhost
 		if self.host in ['localhost','127.0.0.1']:
@@ -110,10 +115,12 @@ class Service(SocketService):
 				except IOError:
 					pass
 			if TS3_running is False:
-				self.error("No TeamSpeak server running. Disabling plugin...")
-				sys.exit(1)
+				self.error("No local TeamSpeak server running. Disabling plugin...")
+				return False
 			else:
 				self.debug("TeamSpeak server process found. Connecting...")
+
+		return True
 
 	def _send(self):
 		"""
@@ -154,7 +161,7 @@ class Service(SocketService):
 		connected_users = reg.findall(raw)
 		self.debug(str(connected_users))
 		if connected_users == []:
-			self.error("Information could not be extacted")
+			self.error("Information could not be extracted")
 			return None
 		try:
 			## clients connected - query clients connected
