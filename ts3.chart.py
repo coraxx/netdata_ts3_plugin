@@ -29,7 +29,7 @@ Copyright (C) 2016  Jan Arnold
 # @Credits			:
 # @Maintainer		: Jan Arnold
 # @Date				: 2016/08/15
-# @Version			: 0.1
+# @Version			: 0.2
 # @Status			: stable
 # @Usage			: automatically processed by netdata
 # @Notes			: With default NetData installation put this file under
@@ -37,29 +37,30 @@ Copyright (C) 2016  Jan Arnold
 # @Python_version	: 2.7.11
 """
 # ======================================================================================================================
-from __future__ import print_function
 import sys
 import os
 import re
-import time
-import telnetlib
-from base import SimpleService
+from base import SocketService
 
 ## Plugin settings
-update_every = 10
+update_every = 1
 priority = 60000
 retries = 10
 
+ORDER = ['users']
 
-class Service(SimpleService):
+CHARTS = {
+	'users': {
+		'options': [None, 'Users online', 'users', 'TeamSpeak Server', 'ts3.connected_user', 'line'],
+		'lines': [
+			['connected_users', 'online', 'absolute']
+		]}
+}
+
+
+class Service(SocketService):
 	def __init__(self, configuration=None, name=None):
-		SimpleService.__init__(self, configuration=configuration, name=name)
-		self.writeToLog = True
-		# Reconnect settings
-		self.maxReconnects = 5
-		self.retryCounter = 0
-		## Timeout for Telnet commands in seconds
-		self.timeout = 1
+		SocketService.__init__(self, configuration=configuration, name=name)
 
 		########################## CUSTOMIZE ME ##########################
 		## TeamSpeak Server settings
@@ -75,14 +76,29 @@ class Service(SimpleService):
 
 		#####################  END OF CUSTOMIZATION ######################
 
+		## Socket settings
+		self.unix_socket = None
+		self._keep_alive = True
+		# self.request = "login {0} {1}\nuse sid={2}\nserverinfo\n".format(self.user, self.passwd, self.sid)
+		self.request = "serverinfo\n"
+
+		# Chart
+		self.order = ORDER
+		self.definitions = CHARTS
+
+		# Reconnect settings
+		self.maxReconnects = 5
+		self.retryCounter = 0
+
+		self.connected_users = 0
+
 		if self.user == "" or self.passwd == "":
-			if self.writeToLog: print(
-				"ts3.chart.py [FAIL] Please specify a TeamSpeak Server query user and password inside the ts3.chart.py!",
-				"Disable plugin...",
-				file=sys.stderr)
+			self.error(
+				"Please specify a TeamSpeak Server query user and password inside the ts3.chart.py!",
+				"Disable plugin...")
 			sys.exit(1)
 
-		## Check if TS3 is running when host is localhost
+		## Check once if TS3 is running when host is localhost
 		if self.host in ['localhost','127.0.0.1']:
 			TS3_running = False
 			pids = [pid for pid in os.listdir('/proc') if pid.isdigit()]
@@ -94,119 +110,64 @@ class Service(SimpleService):
 				except IOError:
 					pass
 			if TS3_running is False:
-				if self.writeToLog: print(
-					"ts3.chart.py [FAIL] No TeamSpeak server running. Disable plugin...",
-					file=sys.stderr)
+				self.error("No TeamSpeak server running. Disabling plugin...")
 				sys.exit(1)
 			else:
-				if self.writeToLog: print(
-					"ts3.chart.py [Info] TeamSpeak server process found. Connecting...",
-					file=sys.stderr)
+				self.debug("TeamSpeak server process found. Connecting...")
 
-		self.connected_users = None
-
-		## Connect to server
-		ret = self.connectToServer()
-		if ret == 1:
-			if self.writeToLog: print(
-				"ts3.chart.py [FAIL] Connection to TeamSpeak server failed. Disable plugin...",
-				file=sys.stderr)
-			sys.exit(1)
-		else:
-			if self.writeToLog: print("ts3.chart.py [Info] Connected to TeamSpeak server: sid={0} @ {1}:{2}".format(
-				self.sid, self.host, self.port), file=sys.stderr)
-
-	def check(self):
-		return True
-
-	def create(self):
-		self.chart(
-			'ts3.connected_users', '', 'User on TeamSpeak Server', 'users',
-			'connected_users', 'ts3.connected_users', 'line', priority, update_every)
-		self.dimension('online')
-		self.commit()
-		return True
-
-	def update(self, interval):
-		self.begin("ts3.connected_users", interval)
-		self.checkConnection()
-		connected_users = self.getTS3activeClients()
-		self.set("online", connected_users)
-		self.end()
-		self.commit()
-		return True
-
-	def connectToServer(self):
-		self.tn = telnetlib.Telnet(self.host, self.port, self.timeout)
-		index, _, msg = self.tn.expect(["information on a specific command"], self.timeout)
-		if index == -1:
-			if self.writeToLog: print(
-				'ts3.chart.py [FAIL] Connection problems. Cannot connect to server',
-				file=sys.stderr)
-			if self.writeToLog: print(msg, file=sys.stderr)
-			return 1
-		ret = self.getTnResponse("use sid={0}".format(self.sid))
-		if ret is not None:
-			ret = self.getTnResponse("login {0} {1}".format(self.user, self.passwd))
-			if ret is None:
-				if self.writeToLog: print('ts3.chart.py [FAIL] Login unsuccessful', file=sys.stderr)
-				return 1
-			else:
-				return 0
-		else:
-			if self.writeToLog: print(
-				'ts3.chart.py [FAIL] Virtual server with id', self.sid, 'could not be selected.',
-				file=sys.stderr)
-			return 1
-
-	def getTS3activeClients(self):
-		ret = self.getTnResponse("serverinfo")
-		if ret is not None:
-			reg = re.compile("virtualserver_clientsonline=(\d*)|virtualserver_queryclientsonline=(\d*)")
-			connected_users = reg.findall(ret)
+	def _send(self):
+		"""
+		Send request.
+		:return: boolean
+		"""
+		# Send request if it is needed
+		if self.request != "".encode():
 			try:
-				## clients connected - query clients connected
-				connected_users = int(connected_users[0][0]) - int(connected_users[1][1])
-				return connected_users
+				self._sock.send("login {0} {1}\n".format(self.user, self.passwd).encode())
+				self._receive()
+				self._sock.send("use sid={0}\n".format(self.sid).encode())
+				self._receive()
+				self._sock.send(self.request)
 			except Exception as e:
-				if self.writeToLog: print(e, file=sys.stderr)
-				return -1
-		else:
-			if self.writeToLog: print('ts3.chart.py [FAIL] Could not retrieve serverinfo', file=sys.stderr)
-			return -1
+				self._disconnect()
+				self.error(
+					str(e),
+					"used configuration: host:", str(self.host),
+					"port:", str(self.port),
+					"socket:", str(self.unix_socket))
+				return False
+		return True
 
-	def checkConnection(self):
+	def _get_data(self):
+		"""
+		Format data received from socket
+		:return: dict
+		"""
+		data = {}
 		try:
-			self.tn.read_very_eager()
-			self.tn.write('helo\n')
-			index, _, _ = self.tn.expect(['error id=256 msg=command'], self.timeout)
-			if index != 0:
-				raise Exception('Unexpected answer from server')
-			self.tn.read_very_eager()
-			self.retryCounter = 0
-		except:
-			while self.retryCounter < self.maxReconnects:
-				ret = self.connectToServer()
-				if ret == 1:
-					self.retryCounter += 1
-				else:
-					break
-				time.sleep(1)
-			if ret == 1:
-				if self.writeToLog: print(
-					'ts3.chart.py [FAIL] Connection to TeamSpeak server failed. Disable plugin...',
-					file=sys.stderr)
-				sys.exit(1)
-
-	def getTnResponse(self,command):
-		self.tn.write(command+"\n")
-		index, _, msg = self.tn.expect(["error id=[0] msg=ok","error id=([1-9]|[0-9]{2,3}) msg=.*"],1)
-		if index == 0:
-			return msg
-		else:
-			if self.writeToLog: print(
-				"ts3.chart.py [FAIL]",
-				"="*15, "ERROR", "="*15 + "\n",
-				msg + "\n",
-				"="*15, "ERROR", "="*15 + "\n", file=sys.stderr)
+			raw = self._get_raw_data()
+		except (ValueError, AttributeError):
+			self.error("no data received")
 			return None
+
+		reg = re.compile("virtualserver_clientsonline=(\d*)|virtualserver_queryclientsonline=(\d*)")
+		connected_users = reg.findall(raw)
+		self.debug(str(connected_users))
+		if connected_users == []:
+			self.error("Information could not be extacted")
+			return None
+		try:
+			## clients connected - query clients connected
+			connected_users = int(connected_users[0][0]) - int(connected_users[1][1])
+			data["connected_users"] = connected_users
+		except Exception as e:
+			self.error(str(e))
+			return None
+
+		return data
+
+	def _check_raw_data(self, data):
+		if data.endswith("msg=ok\n\r"):
+			return True
+		else:
+			return False
