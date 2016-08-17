@@ -29,7 +29,7 @@ Copyright (C) 2016  Jan Arnold
 # @Credits			:
 # @Maintainer		: Jan Arnold
 # @Date				: 2016/08/15
-# @Version			: 0.3
+# @Version			: 0.4
 # @Status			: stable
 # @Usage			: automatically processed by netdata
 # @Notes			: With default NetData installation put this file under
@@ -47,13 +47,19 @@ update_every = 1
 priority = 60000
 retries = 10
 
-ORDER = ['users']
+ORDER = ['users','bandwidth']
 
 CHARTS = {
 	'users': {
 		'options': [None, 'Users online', 'users', 'Online', 'ts3.connected_user', 'line'],
 		'lines': [
 			['connected_users', 'online', 'absolute']
+		]},
+	'bandwidth': {
+		'options': [None, 'Bandwidth/s', 'kb/s', 'Bandwidth', 'ts3.bandwidth', 'area'],
+		'lines': [
+			['bandwidth_received', 'received', 'absolute', 1, 1000],
+			['bandwidth_sent', 'sent', 'absolute', -1, 1000]
 		]}
 }
 
@@ -63,7 +69,6 @@ class Service(SocketService):
 		SocketService.__init__(self, configuration=configuration, name=name)
 
 		## TeamSpeak Server settings
-		# This script can only check one single virtual server atm
 		self.host = "localhost"
 		self.port = "10011"
 
@@ -157,16 +162,23 @@ class Service(SocketService):
 			self.error("no data received")
 			return None
 
-		reg = re.compile("virtualserver_clientsonline=(\d*)|virtualserver_queryclientsonline=(\d*)")
-		connected_users = reg.findall(raw)
-		self.debug(str(connected_users))
-		if connected_users == []:
+		reg = re.compile(
+			"virtualserver_clientsonline=(\d*)|" +
+			"virtualserver_queryclientsonline=(\d*)|" +
+			"connection_bandwidth_sent_last_second_total=(\d*)|" +
+			"connection_bandwidth_received_last_second_total=(\d*)")
+		regex = reg.findall(raw)
+		self.debug(str(regex))
+		if regex == []:
 			self.error("Information could not be extracted")
 			return None
 		try:
 			## clients connected - query clients connected
-			connected_users = int(connected_users[0][0]) - int(connected_users[1][1])
+			connected_users = int(regex[0][0]) - int(regex[1][1])
 			data["connected_users"] = connected_users
+			## bandwidth info from server in bytes/s
+			data["bandwidth_sent"] = int(regex[2][2])
+			data["bandwidth_received"] = int(regex[3][3])
 		except Exception as e:
 			self.error(str(e))
 			return None

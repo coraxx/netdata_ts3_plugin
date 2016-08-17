@@ -1,6 +1,6 @@
 # README #
 
-[NetData](https://github.com/firehol/netdata/) plugin for active users on TeamSpeak 3 servers.
+[NetData](https://github.com/firehol/netdata/) plugin that polls active users and bandwidth from TeamSpeak 3 servers.
 
 
 ### Installation ###
@@ -33,6 +33,8 @@ Copyright (C) 2016  Jan Arnold
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ### Version ###
+
+v0.4 - added bandwidth graph
 
 v0.3 - cleanup and config implementation - thx for the help @paulfantom
 
