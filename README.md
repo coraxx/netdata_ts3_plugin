@@ -34,6 +34,8 @@ Copyright (C) 2016  Jan Arnold
 
 ### Version ###
 
+v0.5 - added packet loss graph and file transfer bandwidth
+
 v0.4 - added bandwidth graph
 
 v0.3 - cleanup and config implementation - thx for the help @paulfantom

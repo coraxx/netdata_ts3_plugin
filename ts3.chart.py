@@ -29,7 +29,7 @@ Copyright (C) 2016  Jan Arnold
 # @Credits			:
 # @Maintainer		: Jan Arnold
 # @Date				: 2016/08/15
-# @Version			: 0.4
+# @Version			: 0.5
 # @Status			: stable
 # @Usage			: automatically processed by netdata
 # @Notes			: With default NetData installation put this file under
@@ -47,19 +47,33 @@ update_every = 1
 priority = 60000
 retries = 10
 
-ORDER = ['users','bandwidth']
+ORDER = ['users','bandwidth_total','bandwidth_filetransfer','packetloss']
 
 CHARTS = {
 	'users': {
-		'options': [None, 'Users online', 'users', 'Online', 'ts3.connected_user', 'line'],
+		'options': [None, 'Users online', 'users', 'Users', 'ts3.connected_user', 'line'],
 		'lines': [
 			['connected_users', 'online', 'absolute']
 		]},
-	'bandwidth': {
-		'options': [None, 'Bandwidth/s', 'kb/s', 'Bandwidth', 'ts3.bandwidth', 'area'],
+	'bandwidth_total': {
+		'options': [None, 'Bandwidth total', 'kb/s', 'Bandwidth', 'ts3.bandwidth_total', 'area'],
 		'lines': [
-			['bandwidth_received', 'received', 'absolute', 1, 1000],
-			['bandwidth_sent', 'sent', 'absolute', -1, 1000]
+			['bandwidth_total_received', 'received', 'absolute', 1, 1000],
+			['bandwidth_total_sent', 'sent', 'absolute', -1, 1000]
+		]},
+	'bandwidth_filetransfer': {
+		'options': [None, 'Bandwidth filetransfer', 'kb/s', 'Bandwidth', 'ts3.bandwidth_filetransfer', 'area'],
+		'lines': [
+			['bandwidth_filetransfer_received', 'received', 'absolute', 1, 1000],
+			['bandwidth_filetransfer_sent', 'sent', 'absolute', -1, 1000]
+		]},
+	'packetloss': {
+		'options': [None, 'Average data packet loss', 'packets', 'Packet Loss', 'ts3.packetloss', 'line'],
+		'lines': [
+			['packetloss_speech', 'speech', 'absolute'],
+			['packetloss_keepalive', 'keepalive', 'absolute'],
+			['packetloss_control', 'control', 'absolute'],
+			['packetloss_total', 'total', 'absolute']
 		]}
 }
 
@@ -166,7 +180,14 @@ class Service(SocketService):
 			"virtualserver_clientsonline=(\d*)|" +
 			"virtualserver_queryclientsonline=(\d*)|" +
 			"connection_bandwidth_sent_last_second_total=(\d*)|" +
-			"connection_bandwidth_received_last_second_total=(\d*)")
+			"connection_bandwidth_received_last_second_total=(\d*)|" +
+			"connection_filetransfer_bandwidth_sent=(\d*)|" +
+			"connection_filetransfer_bandwidth_received=(\d*)|" +
+			"virtualserver_total_packetloss_speech=(\d*)|" +
+			"virtualserver_total_packetloss_keepalive=(\d*)|" +
+			"virtualserver_total_packetloss_control=(\d*)|" +
+			"virtualserver_total_packetloss_total=(\d*)"
+			)
 		regex = reg.findall(raw)
 		self.debug(str(regex))
 		if regex == []:
@@ -177,8 +198,15 @@ class Service(SocketService):
 			connected_users = int(regex[0][0]) - int(regex[1][1])
 			data["connected_users"] = connected_users
 			## bandwidth info from server in bytes/s
-			data["bandwidth_sent"] = int(regex[2][2])
-			data["bandwidth_received"] = int(regex[3][3])
+			data["bandwidth_total_sent"] = int(regex[8][2])
+			data["bandwidth_total_received"] = int(regex[9][3])
+			data["bandwidth_filetransfer_sent"] = int(regex[6][4])
+			data["bandwidth_filetransfer_received"] = int(regex[7][5])
+			## The average packet loss
+			data["packetloss_speech"] = float(regex[2][6])
+			data["packetloss_keepalive"] = float(regex[3][7])
+			data["packetloss_control"] = float(regex[4][8])
+			data["packetloss_total"] = float(regex[5][9])
 		except Exception as e:
 			self.error(str(e))
 			return None
