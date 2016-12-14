@@ -38,6 +38,8 @@ Copyright (c) 2016 Jan Arnold
 
 ### Version ###
 
+v0.6 - bugfix: default netdata socket service raised an error when decoding non ascii characters
+
 v0.5 - added packet loss graph and file transfer bandwidth
 
 v0.4 - added bandwidth graph

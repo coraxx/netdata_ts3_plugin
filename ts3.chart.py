@@ -32,7 +32,7 @@ DEALINGS IN THE SOFTWARE.
 # @Credits			:
 # @Maintainer		: Jan Arnold
 # @Date				: 2016/08/15
-# @Version			: 0.5
+# @Version			: 0.6
 # @Status			: stable
 # @Usage			: automatically processed by netdata
 # @Notes			: With default NetData installation put this file under
@@ -43,6 +43,7 @@ DEALINGS IN THE SOFTWARE.
 # ======================================================================================================================
 import os
 import re
+import select
 from base import SocketService
 
 ## Plugin settings
@@ -166,6 +167,34 @@ class Service(SocketService):
 					"socket:", str(self.unix_socket))
 				return False
 		return True
+
+	def _receive(self):
+		"""
+		Receive data from socket
+		:return: str
+		"""
+		data = ""
+		while True:
+			try:
+				ready_to_read, _, in_error = select.select([self._sock], [], [], 5)
+			except Exception as e:
+				self.debug("SELECT", str(e))
+				self._disconnect()
+				break
+			if len(ready_to_read) > 0:
+				buf = self._sock.recv(4096)
+				if len(buf) == 0 or buf is None:  # handle server disconnect
+					break
+				self.debug(str(buf))
+				data += buf.decode("utf-8")
+				if self._check_raw_data(data):
+					break
+			else:
+				self.error("Socket timed out.")
+				self._disconnect()
+				break
+
+		return data
 
 	def _get_data(self):
 		"""
