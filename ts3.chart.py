@@ -262,6 +262,7 @@ class Service(SocketService):
         if regex == []:
             self.error("Information could not be extracted")
             return None
+
         try:
             # Clients and query clients connected.
             connected_users = int(regex[0][0]) - int(regex[1][1])
