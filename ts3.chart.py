@@ -76,12 +76,12 @@ CHARTS = {
         ]
     },
     'packetloss': {
-        'options': [None, 'Average data packet loss', 'packets', 'Packet Loss', 'ts3.packetloss', 'line'],
+        'options': [None, 'Average data packet loss', 'packets loss %', 'Packet Loss', 'ts3.packetloss', 'line'],
         'lines': [
-            ['packetloss_speech', 'speech', 'absolute'],
-            ['packetloss_keepalive', 'keepalive', 'absolute'],
-            ['packetloss_control', 'control', 'absolute'],
-            ['packetloss_total', 'total', 'absolute']
+            ['packetloss_speech', 'speech', 'absolute', 1, 100000],
+            ['packetloss_keepalive', 'keepalive', 'absolute', 1, 100000],
+            ['packetloss_control', 'control', 'absolute', 1, 100000],
+            ['packetloss_total', 'total', 'absolute', 1, 100000],
         ]
     }
 }
@@ -249,10 +249,10 @@ class Service(SocketService):
             "connection_bandwidth_received_last_second_total=(\d*)|" +
             "connection_filetransfer_bandwidth_sent=(\d*)|" +
             "connection_filetransfer_bandwidth_received=(\d*)|" +
-            "virtualserver_total_packetloss_speech=(\d*)|" +
-            "virtualserver_total_packetloss_keepalive=(\d*)|" +
-            "virtualserver_total_packetloss_control=(\d*)|" +
-            "virtualserver_total_packetloss_total=(\d*)"
+            "virtualserver_total_packetloss_speech=(\d+\.\d+)|" +
+            "virtualserver_total_packetloss_keepalive=(\d+\.\d+)|" +
+            "virtualserver_total_packetloss_control=(\d+\.\d+)|" +
+            "virtualserver_total_packetloss_total=(\d+\.\d+)"
         )
 
         regex = reg.findall(raw)
@@ -275,11 +275,11 @@ class Service(SocketService):
             data["bandwidth_filetransfer_received"] = int(regex[7][5])
 
             # The average packet loss.
-            data["packetloss_speech"] = float(regex[2][6])
-            data["packetloss_keepalive"] = float(regex[3][7])
-            data["packetloss_control"] = float(regex[4][8])
-            data["packetloss_total"] = float(regex[5][9])
-
+            data["packetloss_speech"] = float(regex[2][6]) * 100000
+            data["packetloss_keepalive"] = float(regex[3][7]) * 100000
+            data["packetloss_control"] = float(regex[4][8]) * 100000
+            data["packetloss_total"] = float(regex[5][9]) * 100000
+			
         except Exception as e:
             self.error(str(e))
             return None
