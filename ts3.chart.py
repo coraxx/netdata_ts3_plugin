@@ -101,7 +101,7 @@ class Service(SocketService):
         self.request = "serverinfo\n"
 
         # Chart information handled by netdata.
-        self.name = "Teamspeak 3 Server"
+        #self.name = "Teamspeak 3 Server"
         self.order = ORDER
         self.definitions = CHARTS
 
