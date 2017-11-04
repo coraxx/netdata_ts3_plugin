@@ -176,7 +176,7 @@ class Service(SocketService):
         # Send request if it is needed
         if self.request != "".encode():
             try:
-                self._sock.send("login {0} {1}\n".format(self.user, self.passwd).encode())
+                self._sock.send("whoami\n")
                 self._receive()
                 self._sock.send("use sid={0}\n".format(self.sid).encode())
                 self._receive()
@@ -289,6 +289,8 @@ class Service(SocketService):
     def _check_raw_data(self, data):
         if data.endswith("msg=ok\n\r"):
             return True
-
+        elif "virtualserver_status=unknown" in data: 
+			self._sock.send("login {0} {1}\n".format(self.user, self.passwd).encode())
+			self._receive()
         else:
             return False
