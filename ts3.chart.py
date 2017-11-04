@@ -290,7 +290,8 @@ class Service(SocketService):
         if data.endswith("msg=ok\n\r"):
             return True
         elif "virtualserver_status=unknown" in data: 
-			self._sock.send("login {0} {1}\n".format(self.user, self.passwd).encode())
-			self._receive()
+            # Perform login
+            self._sock.send("login {0} {1}\n".format(self.user, self.passwd).encode())
+            self._receive()
         else:
             return False
