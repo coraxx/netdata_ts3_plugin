@@ -78,10 +78,10 @@ CHARTS = {
     'packetloss': {
         'options': [None, 'Average data packet loss', 'packets loss %', 'Packet Loss', 'ts3.packetloss', 'line'],
         'lines': [
-            ['packetloss_speech', 'speech', 'absolute', 1, 100000],
-            ['packetloss_keepalive', 'keepalive', 'absolute', 1, 100000],
-            ['packetloss_control', 'control', 'absolute', 1, 100000],
-            ['packetloss_total', 'total', 'absolute', 1, 100000],
+            ['packetloss_speech', 'speech', 'absolute', 1, 1000],
+            ['packetloss_keepalive', 'keepalive', 'absolute', 1, 1000],
+            ['packetloss_control', 'control', 'absolute', 1, 1000],
+            ['packetloss_total', 'total', 'absolute', 1, 1000],
         ]
     }
 }
