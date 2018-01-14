@@ -101,7 +101,6 @@ class Service(SocketService):
         self.request = "serverinfo\n"
 
         # Chart information handled by netdata.
-        #self.name = "Teamspeak 3 Server"
         self.order = ORDER
         self.definitions = CHARTS
 
@@ -153,6 +152,7 @@ class Service(SocketService):
                 try:
                     if b'ts3server' in open(os.path.join('/proc', pid, 'cmdline').encode(), 'rb').read():
                         TS3_running = True
+
                         break
 
                 except IOError as e:
@@ -176,7 +176,7 @@ class Service(SocketService):
         # Send request if it is needed
         if self.request != "".encode():
             try:
-                self._sock.send("whoami\n")
+                self._sock.send(b"whoami\n")
                 self._receive()
                 self._sock.send("use sid={0}\n".format(self.sid).encode())
                 self._receive()
@@ -188,7 +188,8 @@ class Service(SocketService):
                     str(e),
                     "used configuration: host:", str(self.host),
                     "port:", str(self.port),
-                    "socket:", str(self.unix_socket))
+                    "socket:", str(self.unix_socket)
+                )
 
                 return False
 
@@ -204,9 +205,11 @@ class Service(SocketService):
         while True:
             try:
                 ready_to_read, _, in_error = select.select([self._sock], [], [], 5)
+
             except Exception as e:
                 self.debug("SELECT", str(e))
                 self._disconnect()
+
                 break
 
             if len(ready_to_read) > 0:
@@ -234,6 +237,7 @@ class Service(SocketService):
         :return: dict
         """
         data = {}
+
         try:
             raw = self._get_raw_data()
 
@@ -279,9 +283,10 @@ class Service(SocketService):
             data["packetloss_keepalive"] = float(regex[3][7]) * 100000
             data["packetloss_control"] = float(regex[4][8]) * 100000
             data["packetloss_total"] = float(regex[5][9]) * 100000
-			
+
         except Exception as e:
             self.error(str(e))
+
             return None
 
         return data
@@ -289,9 +294,11 @@ class Service(SocketService):
     def _check_raw_data(self, data):
         if data.endswith("msg=ok\n\r"):
             return True
-        elif "virtualserver_status=unknown" in data: 
+
+        elif "virtualserver_status=unknown" in data:
             # Perform login
             self._sock.send("login {0} {1}\n".format(self.user, self.passwd).encode())
             self._receive()
+
         else:
             return False
