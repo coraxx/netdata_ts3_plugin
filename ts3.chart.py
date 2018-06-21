@@ -168,7 +168,7 @@ class Service(SocketService):
 
         return True
 
-    def _send(self):
+    def _send(self, request=None):
         """
         Send request.
         :return: boolean
