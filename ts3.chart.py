@@ -31,14 +31,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # @Copyright        : Copyright (C) 2016-2017 Jan Arnold
 # @License          : MIT
 # @Maintainer       : Jan Arnold
-# @Date             : 2017/09/12
-# @Version          : 0.7
+# @Date             : 2018/10/02
+# @Version          : 0.8
 # @Status           : stable
 # @Usage            : Automatically processed by netdata
 # @Notes            : With default NetData installation put this file under
 #                   : /usr/libexec/netdata/python.d/ and the config file under
 #                   : /etc/netdata/python.d/
-# @Python_version   : 3.6.2
+# @Python_version   : >3.6.2 or >2.7.3
 """
 
 import os
