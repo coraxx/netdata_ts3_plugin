@@ -45,7 +45,7 @@ import os
 import re
 import select
 
-from base import SocketService
+from bases.FrameworkServices.SocketService import SocketService
 
 # Basic plugin settings for netdata.
 update_every = 1
