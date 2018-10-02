@@ -92,7 +92,7 @@ class Service(SocketService):
         SocketService.__init__(self, configuration=configuration, name=name)
 
         # Default TeamSpeak Server connection settings.
-        self.host = "localhost"
+        self.host = "127.0.0.1"
         self.port = "10011"
 
         # Connection socket settings.
