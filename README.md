@@ -33,6 +33,8 @@ Run plugin in debug mode:
 
 ## Version History ##
 
+- v0.9
+    - Avoid login with every query and subsequently filling up teamspeaks query log
 - v0.8
     - Fixed SocketService import
     - compatibility fix for netdata 1.10 by @arnowelzel

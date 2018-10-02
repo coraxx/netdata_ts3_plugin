@@ -32,7 +32,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # @License          : MIT
 # @Maintainer       : Jan Arnold
 # @Date             : 2018/10/02
-# @Version          : 0.8
+# @Version          : 0.9
 # @Status           : stable
 # @Usage            : Automatically processed by netdata
 # @Notes            : With default NetData installation put this file under
@@ -99,6 +99,7 @@ class Service(SocketService):
         self.unix_socket = None
         self._keep_alive = True
         self.request = "serverinfo\n"
+        self.loggedIn = False
 
         # Chart information handled by netdata.
         self.order = ORDER
@@ -176,13 +177,16 @@ class Service(SocketService):
         # Send request if it is needed
         if self.request != "".encode():
             try:
-                self._sock.send("login {0} {1}\n".format(self.user, self.passwd).encode())
-                self._receive()
-                self._sock.send("use sid={0}\n".format(self.sid).encode())
-                self._receive()
+                if not self.loggedIn:
+                    self._sock.send("login {0} {1}\n".format(self.user, self.passwd).encode())
+                    self._receive()
+                    self._sock.send("use sid={0}\n".format(self.sid).encode())
+                    self._receive()
+                    self.loggedIn = True
                 self._sock.send(self.request)
 
             except Exception as e:
+                self.loggedIn = False
                 self._disconnect()
                 self.error(
                     str(e),
